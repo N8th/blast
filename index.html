@@ -20,7 +20,7 @@
             width: 90%;
             margin: 20px auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
         }
 
@@ -32,7 +32,7 @@
             word-wrap: break-word;
         }
 
-        .gallery-item img {
+        .gallery-item img, .gallery-item video {
             max-width: 100%;
             height: auto;
             border-radius: 8px;
@@ -81,7 +81,7 @@
             .gallery-item {
                 padding: 10px;
             }
-            .gallery-item img {
+            .gallery-item img, .gallery-item video {
                 margin-bottom: 5px;
             }
             .order-select select {
@@ -142,8 +142,15 @@
                 const galleryItem = document.createElement('div');
                 galleryItem.className = 'gallery-item';
 
+                let mediaElement;
+                if (item['Image Link'].endsWith('.mp4')) {
+                    mediaElement = `<video src="${item['Image Link']}" autoplay loop muted controls></video>`;
+                } else {
+                    mediaElement = `<img src="${item['Image Link']}" alt="Image">`;
+                }
+
                 galleryItem.innerHTML = `
-                    <img src="${item['Image Link']}" alt="Image">
+                    ${mediaElement}
                     <p><strong>Event Code:</strong> ${item['Event Code']}</p>
                     <p><strong>Photo Id:</strong> ${item['Photo Id']}</p>
                     <p><strong>Taken At:</strong> ${item['Taken At']}</p>
