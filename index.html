@@ -1,153 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Gallery Viewer</title>
     <style>
-      body {
-        background-color: #121212;
-        color: #ffffff;
-        font-family: Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-      .gallery-container {
-        width: 80%;
-        margin: 20px auto;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-      }
+        .gallery-container {
+            width: 90%;
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
 
-      .gallery-item {
-        background-color: #1e1e1e;
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-      }
+        .gallery-item {
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            word-wrap: break-word;
+        }
 
-      .gallery-item img {
-        max-width: 100%;
-        border-radius: 8px;
-      }
+        .gallery-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
 
-      .pagination {
-        margin: 20px;
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-      }
+        .gallery-item p {
+            margin: 5px 0;
+        }
 
-      .pagination button {
-        background-color: #333;
-        color: #fff;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-        border-radius: 5px;
-      }
+        .pagination {
+            margin: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
 
-      .pagination button:disabled {
-        background-color: #555;
-        cursor: not-allowed;
-      }
+        .pagination button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
 
-      .order-select {
-        margin: 20px;
-        text-align: center;
-      }
+        .pagination button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
 
-      .order-select select {
-        background-color: #333;
-        color: #fff;
-        padding: 10px;
-        border: none;
-        border-radius: 5px;
-      }
+        .order-select {
+            margin: 20px;
+            text-align: center;
+        }
+
+        .order-select select {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .gallery-item {
+                padding: 10px;
+            }
+            .gallery-item img {
+                margin-bottom: 5px;
+            }
+            .order-select select {
+                width: 100%;
+            }
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <h1>JSON Gallery Viewer</h1>
 
     <div class="order-select">
-      <label for="order">Order By:</label>
-      <select id="order" onchange="loadGallery()">
-        <option value="Photo Id">Photo Id</option>
-        <option value="Taken At">Taken At</option>
-        <option value="Event Code">Event Code</option>
-      </select>
+        <label for="order">Order By:</label>
+        <select id="order" onchange="loadGallery()">
+            <option value="random">Random Order</option>
+            <option value="Photo Id">Photo Id</option>
+            <option value="Taken At">Taken At</option>
+            <option value="Event Code">Event Code</option>
+        </select>
     </div>
 
     <div class="gallery-container" id="gallery"></div>
 
     <div class="pagination">
-      <button id="prevBtn" onclick="prevPage()">Previous</button>
-      <button id="nextBtn" onclick="nextPage()">Next</button>
+        <button id="prevBtn" onclick="prevPage()">Previous</button>
+        <button id="nextBtn" onclick="nextPage()">Next</button>
     </div>
 
     <script>
-      let jsonData = [];
-      let currentPage = 1;
-      const itemsPerPage = 10;
+        let jsonData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
 
-      async function loadJSON() {
-        const response = await fetch("./master.json");
-        jsonData = await response.json();
-        loadGallery();
-      }
+        async function loadJSON() {
+            const response = await fetch('./master.json');
+            jsonData = await response.json();
+            loadGallery();
+        }
 
-      function loadGallery() {
-        const order = document.getElementById("order").value;
-        const sortedData = [...jsonData].sort((a, b) =>
-          a[order] > b[order] ? 1 : -1
-        );
+        function loadGallery() {
+            const order = document.getElementById('order').value;
+            let filteredData = jsonData.filter(item => item.Email || item.Phone);
 
-        const gallery = document.getElementById("gallery");
-        gallery.innerHTML = "";
+            if (order === 'random') {
+                filteredData = filteredData.sort(() => 0.5 - Math.random());
+            } else {
+                filteredData = filteredData.sort((a, b) => (a[order] > b[order]) ? 1 : -1);
+            }
 
-        const start = (currentPage - 1) * itemsPerPage;
-        const end = start + itemsPerPage;
-        const pageItems = sortedData.slice(start, end);
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
 
-        pageItems.forEach((item) => {
-          const galleryItem = document.createElement("div");
-          galleryItem.className = "gallery-item";
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageItems = filteredData.slice(start, end);
 
-          galleryItem.innerHTML = `
-                    <img src="${item["Image Link"]}" alt="Image">
-                    <p><strong>Event Code:</strong> ${item["Event Code"]}</p>
-                    <p><strong>Photo Id:</strong> ${item["Photo Id"]}</p>
-                    <p><strong>Taken At:</strong> ${item["Taken At"]}</p>
-                    <p><strong>Email:</strong> ${item["Email"]}</p>
-                    <p><strong>Phone:</strong> ${item["Phone"]}</p>
-                    <p><strong>Microsite Link:</strong> <a href="${item["Microsite Link"]}" target="_blank">${item["Microsite Link"]}</a></p>
+            pageItems.forEach(item => {
+                const galleryItem = document.createElement('div');
+                galleryItem.className = 'gallery-item';
+
+                galleryItem.innerHTML = `
+                    <img src="${item['Image Link']}" alt="Image">
+                    <p><strong>Event Code:</strong> ${item['Event Code']}</p>
+                    <p><strong>Photo Id:</strong> ${item['Photo Id']}</p>
+                    <p><strong>Taken At:</strong> ${item['Taken At']}</p>
+                    <p><strong>Email:</strong> ${item['Email'] ? item['Email'] : 'N/A'}</p>
+                    <p><strong>Phone:</strong> ${item['Phone'] ? item['Phone'] : 'N/A'}</p>
+                    <p><strong>Microsite Link:</strong> <a href="${item['Microsite Link']}" target="_blank" style="color:#1e90ff;">${item['Microsite Link']}</a></p>
                 `;
 
-          gallery.appendChild(galleryItem);
-        });
+                gallery.appendChild(galleryItem);
+            });
 
-        document.getElementById("prevBtn").disabled = currentPage === 1;
-        document.getElementById("nextBtn").disabled = end >= jsonData.length;
-      }
-
-      function prevPage() {
-        if (currentPage > 1) {
-          currentPage--;
-          loadGallery();
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = end >= filteredData.length;
         }
-      }
 
-      function nextPage() {
-        if (currentPage * itemsPerPage < jsonData.length) {
-          currentPage++;
-          loadGallery();
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadGallery();
+            }
         }
-      }
 
-      window.onload = loadJSON;
+        function nextPage() {
+            if (currentPage * itemsPerPage < jsonData.length) {
+                currentPage++;
+                loadGallery();
+            }
+        }
+
+        window.onload = loadJSON;
     </script>
-  </body>
+</body>
 </html>
