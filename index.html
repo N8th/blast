@@ -30,10 +30,12 @@
             border-radius: 8px;
             text-align: center;
             word-wrap: break-word;
+            max-width: 100%;
         }
 
         .gallery-item img, .gallery-item video {
-            max-width: 100%;
+            width: 100%;
+            max-width: 300px;
             height: auto;
             border-radius: 8px;
             margin-bottom: 10px;
@@ -44,15 +46,16 @@
         }
 
         .pagination {
-            margin: 20px;
+            margin: 20px 0;
             display: flex;
             justify-content: center;
             gap: 10px;
-            padding-bottom: 20px;
-            position: sticky;
+            width: 100%;
+            position: fixed;
             bottom: 0;
             background-color: #121212;
-            padding-top: 10px;
+            padding: 10px 0;
+            z-index: 1000;
         }
 
         .pagination button {
@@ -62,6 +65,7 @@
             padding: 10px 20px;
             cursor: pointer;
             border-radius: 5px;
+            flex: 1;
         }
 
         .pagination button:disabled {
@@ -82,14 +86,16 @@
             border-radius: 5px;
         }
 
-        @media only screen and (max-width: 600px) {
+        @media only screen and (max-width: 900px) {
             .gallery-container {
                 grid-template-columns: repeat(3, 1fr);
             }
             .gallery-item {
                 padding: 10px;
+                max-width: 100%;
             }
             .gallery-item img, .gallery-item video {
+                max-width: 100%;
                 margin-bottom: 5px;
             }
             .order-select select, .items-select select {
