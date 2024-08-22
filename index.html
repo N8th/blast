@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JSON Gallery Viewer</title>
+    <title>Grabbed From Curator</title>
     <style>
         body {
             background-color: #121212;
@@ -20,7 +20,7 @@
             width: 90%;
             margin: 20px auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 20px;
         }
 
@@ -48,6 +48,11 @@
             display: flex;
             justify-content: center;
             gap: 10px;
+            padding-bottom: 20px;
+            position: sticky;
+            bottom: 0;
+            background-color: #121212;
+            padding-top: 10px;
         }
 
         .pagination button {
@@ -64,12 +69,12 @@
             cursor: not-allowed;
         }
 
-        .order-select {
+        .order-select, .items-select {
             margin: 20px;
             text-align: center;
         }
 
-        .order-select select {
+        .order-select select, .items-select select {
             background-color: #333;
             color: #fff;
             padding: 10px;
@@ -78,20 +83,23 @@
         }
 
         @media only screen and (max-width: 600px) {
+            .gallery-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
             .gallery-item {
                 padding: 10px;
             }
             .gallery-item img, .gallery-item video {
                 margin-bottom: 5px;
             }
-            .order-select select {
+            .order-select select, .items-select select {
                 width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <h1>JSON Gallery Viewer</h1>
+    <h1>Grabbed From Curator</h1>
 
     <div class="order-select">
         <label for="order">Order By:</label>
@@ -100,6 +108,15 @@
             <option value="Photo Id">Photo Id</option>
             <option value="Taken At">Taken At</option>
             <option value="Event Code">Event Code</option>
+        </select>
+    </div>
+
+    <div class="items-select">
+        <label for="itemsPerPage">Items to Display:</label>
+        <select id="itemsPerPage" onchange="updateItemsPerPage()">
+            <option value="3">3</option>
+            <option value="6" selected>6</option>
+            <option value="9">9</option>
         </select>
     </div>
 
@@ -113,11 +130,17 @@
     <script>
         let jsonData = [];
         let currentPage = 1;
-        const itemsPerPage = 10;
+        let itemsPerPage = 6;
 
         async function loadJSON() {
             const response = await fetch('./master.json');
             jsonData = await response.json();
+            loadGallery();
+        }
+
+        function updateItemsPerPage() {
+            itemsPerPage = parseInt(document.getElementById('itemsPerPage').value);
+            currentPage = 1;
             loadGallery();
         }
 
