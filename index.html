@@ -1,218 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grabbed From Curator</title>
-    <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        .gallery-container {
-            width: 100%;
-            height: calc(100vh - 150px);
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-auto-rows: 1fr;
-            gap: 10px;
-            padding: 10px;
-            box-sizing: border-box;
-            overflow-y: auto;
-        }
-
-        .gallery-item {
-            background-color: #1e1e1e;
-            border-radius: 8px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-            overflow: hidden;
-        }
-
-        .gallery-item img, .gallery-item video {
-            width: 100%;
-            height: auto;
-            max-height: 100%;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            object-fit: contain;
-        }
-
-        .gallery-item p {
-            margin: 5px 0;
-            font-size: 0.9em;
-            word-wrap: break-word;
-        }
-
-        .pagination {
-            width: 100%;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            background-color: #121212;
-            padding: 10px 0;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            z-index: 1000;
-        }
-
-        .pagination button {
-            background-color: #333;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 5px;
-            flex: 1;
-        }
-
-        .pagination button:disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
-
-        .order-select, .items-select {
-            margin: 20px;
-            text-align: center;
-        }
-
-        .order-select select, .items-select select {
-            background-color: #333;
-            color: #fff;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-        }
-
-        @media only screen and (max-width: 900px) {
-            .gallery-container {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .gallery-item p {
-                font-size: 0.8em;
-            }
-        }
-    </style>
-</head>
-<body>
-    <h1>Grabbed From Curator</h1>
-
-    <div class="order-select">
-        <label for="order">Order By:</label>
-        <select id="order" onchange="loadGallery()">
-            <option value="random">Random Order</option>
-            <option value="Photo Id">Photo Id</option>
-            <option value="Taken At">Taken At</option>
-            <option value="Event Code">Event Code</option>
-        </select>
-    </div>
-
-    <div class="items-select">
-        <label for="itemsPerPage">Items to Display:</label>
-        <select id="itemsPerPage" onchange="updateItemsPerPage()">
-            <option value="3">3</option>
-            <option value="6" selected>6</option>
-            <option value="9">9</option>
-        </select>
-    </div>
-
-    <div class="gallery-container" id="gallery"></div>
-
-    <div class="pagination">
-        <button id="prevBtn" onclick="prevPage()">Previous</button>
-        <button id="nextBtn" onclick="nextPage()">Next</button>
-    </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GCS JSON Downloader</title>
+  </head>
+  <body>
+    <h1>GCS JSON Downloader</h1>
+    <label for="bucketUrl">Starting URL:</label>
+    <input
+      type="text"
+      id="bucketUrl"
+      placeholder="Enter the starting URL"
+      style="width: 100%"
+    />
+    <br /><br />
+    <label for="maxPages">Number of Pages:</label>
+    <input type="number" id="maxPages" value="1" min="1" />
+    <br /><br />
+    <button onclick="startDownload()">Start Download</button>
 
     <script>
-        let jsonData = [];
-        let currentPage = 1;
-        let itemsPerPage = 6;
+      async function startDownload() {
+        const bucketUrl = document.getElementById("bucketUrl").value;
+        const maxPages = parseInt(
+          document.getElementById("maxPages").value,
+          10
+        );
+        const maxKeys = 5000; // You can modify this if needed
 
-        async function loadJSON() {
-            const response = await fetch('./master.json');
-            jsonData = await response.json();
-            loadGallery();
+        if (!bucketUrl || maxPages < 1) {
+          alert("Please enter a valid URL and number of pages.");
+          return;
         }
 
-        function updateItemsPerPage() {
-            itemsPerPage = parseInt(document.getElementById('itemsPerPage').value);
-            currentPage = 1;
-            loadGallery();
+        let nextMarker = null;
+        let page = 0;
+
+        while (page < maxPages) {
+          const url = nextMarker
+            ? `${bucketUrl}?max-keys=${maxKeys}&marker=${nextMarker}`
+            : `${bucketUrl}?max-keys=${maxKeys}`;
+
+          const response = await fetch(url);
+          const text = await response.text();
+
+          // Parse the XML response to JSON
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(text, "application/xml");
+
+          // Convert XML to JSON (simplified)
+          const json = xmlToJson(xmlDoc);
+
+          // Save JSON to file
+          await downloadJsonFile(json, `gcs_page_${page + 1}.json`);
+
+          // Find NextMarker
+          const nextMarkerElement = xmlDoc.querySelector("NextMarker");
+          if (nextMarkerElement) {
+            nextMarker = nextMarkerElement.textContent;
+          } else {
+            console.log("No more pages to fetch.");
+            break;
+          }
+
+          // Prepare for the next iteration
+          page += 1;
+        }
+      }
+
+      function xmlToJson(xml) {
+        const obj = {};
+        if (xml.nodeType === 1) {
+          // element
+          if (xml.attributes.length > 0) {
+            obj["@attributes"] = {};
+            for (let j = 0; j < xml.attributes.length; j++) {
+              const attribute = xml.attributes.item(j);
+              obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
+            }
+          }
+        } else if (xml.nodeType === 3) {
+          // text
+          obj = xml.nodeValue;
         }
 
-        function loadGallery() {
-            const order = document.getElementById('order').value;
-            let filteredData = jsonData.filter(item => item.Email || item.Phone);
-
-            if (order === 'random') {
-                filteredData = filteredData.sort(() => 0.5 - Math.random());
+        // Process children
+        if (xml.hasChildNodes()) {
+          for (let i = 0; i < xml.childNodes.length; i++) {
+            const item = xml.childNodes.item(i);
+            const nodeName = item.nodeName;
+            if (typeof obj[nodeName] === "undefined") {
+              obj[nodeName] = xmlToJson(item);
             } else {
-                filteredData = filteredData.sort((a, b) => (a[order] > b[order]) ? 1 : -1);
+              if (typeof obj[nodeName].push === "undefined") {
+                const old = obj[nodeName];
+                obj[nodeName] = [];
+                obj[nodeName].push(old);
+              }
+              obj[nodeName].push(xmlToJson(item));
             }
-
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = '';
-
-            const start = (currentPage - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            const pageItems = filteredData.slice(start, end);
-
-            pageItems.forEach(item => {
-                const galleryItem = document.createElement('div');
-                galleryItem.className = 'gallery-item';
-
-                let mediaElement;
-                if (item['Image Link'].endsWith('.mp4')) {
-                    mediaElement = `<video src="${item['Image Link']}" autoplay loop muted controls></video>`;
-                } else {
-                    mediaElement = `<img src="${item['Image Link']}" alt="Image">`;
-                }
-
-                galleryItem.innerHTML = `
-                    ${mediaElement}
-                    <p><strong>Event Code:</strong> ${item['Event Code']}</p>
-                    <p><strong>Photo Id:</strong> ${item['Photo Id']}</p>
-                    <p><strong>Taken At:</strong> ${item['Taken At']}</p>
-                    <p><strong>Email:</strong> ${item['Email'] ? item['Email'] : 'N/A'}</p>
-                    <p><strong>Phone:</strong> ${item['Phone'] ? item['Phone'] : 'N/A'}</p>
-                    <p><strong>Microsite Link:</strong> <a href="${item['Microsite Link']}" target="_blank" style="color:#1e90ff;">${item['Microsite Link']}</a></p>
-                `;
-
-                gallery.appendChild(galleryItem);
-            });
-
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = end >= filteredData.length;
+          }
         }
+        return obj;
+      }
 
-        function prevPage() {
-            if (currentPage > 1) {
-                currentPage--;
-                loadGallery();
-            }
-        }
+      function downloadJsonFile(json, filename) {
+        return new Promise((resolve) => {
+          const jsonBlob = new Blob([JSON.stringify(json, null, 2)], {
+            type: "application/json",
+          });
+          const jsonUrl = URL.createObjectURL(jsonBlob);
+          const downloadLink = document.createElement("a");
+          downloadLink.href = jsonUrl;
+          downloadLink.download = filename;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
 
-        function nextPage() {
-            if (currentPage * itemsPerPage < jsonData.length) {
-                currentPage++;
-                loadGallery();
-            }
-        }
-
-        window.onload = loadJSON;
+          // Resolve the promise after a short delay to ensure download is complete
+          setTimeout(() => resolve(), 1000);
+        });
+      }
     </script>
-</body>
+  </body>
 </html>
